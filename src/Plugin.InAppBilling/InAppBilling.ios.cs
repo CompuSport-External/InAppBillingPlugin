@@ -295,8 +295,6 @@ namespace Plugin.InAppBilling
             }
         }
 
-
-
         static SKPaymentTransaction FindOriginalTransaction(SKPaymentTransaction transaction)
         {
             if (transaction == null)
@@ -324,10 +322,10 @@ namespace Plugin.InAppBilling
         /// <param name="obfuscatedAccountId">Specifies an optional obfuscated string that is uniquely associated with the user's account in your app.</param>
         /// <param name="obfuscatedProfileId">Specifies an optional obfuscated string that is uniquely associated with the user's profile in your app.</param>
         /// <returns></returns>
-        public async override Task<InAppBillingPurchase> PurchaseAsync(string productId, ItemType itemType, string obfuscatedAccountId = null, string obfuscatedProfileId = null, string subOfferToken = null, CancellationToken cancellationToken = default)
+        public async override Task<InAppBillingPurchase> PurchaseAsync(string productId, ItemType itemType, string obfuscatedAccountId = null, string obfuscatedProfileId = null, string subOfferToken = null, AppleOfferSignature appleOfferSignature = null, CancellationToken cancellationToken = default)
         {
             Init();
-            var p = await PurchaseAsync(productId, itemType, obfuscatedAccountId, cancellationToken);
+            var p = await PurchaseAsync(productId, itemType, obfuscatedAccountId, subOfferToken, appleOfferSignature, cancellationToken);
 
             var reference = new DateTime(2001, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
@@ -351,7 +349,7 @@ namespace Plugin.InAppBilling
         }
 
 
-        async Task<SKPaymentTransaction> PurchaseAsync(string productId, ItemType itemType, string applicationUserName, CancellationToken cancellationToken)
+        async Task<SKPaymentTransaction> PurchaseAsync(string productId, ItemType itemType, string applicationUserName, string subOfferToken, AppleOfferSignature appleOfferSignature, CancellationToken cancellationToken)
         {
             var tcsTransaction = new TaskCompletionSource<SKPaymentTransaction>();
 
@@ -417,26 +415,69 @@ namespace Plugin.InAppBilling
                 if (product == null)
                     throw new InAppBillingPurchaseException(PurchaseError.InvalidProduct);
 
-                if (string.IsNullOrWhiteSpace(applicationUserName))
-                {
-                    var payment = SKPayment.CreateFrom(product);
-                    //var payment = SKPayment.CreateFrom((SKProduct)SKProduct.FromObject(new NSString(productId)));
+                SKPayment payment = null;
 
-                    SKPaymentQueue.DefaultQueue.AddPayment(payment);
+                if (!string.IsNullOrWhiteSpace(subOfferToken) && product.Discounts?.Any() == true)
+                {
+                    // Find the discount that matches the subOfferToken
+                    var discount = product.Discounts.FirstOrDefault(d => d.Identifier == subOfferToken);
+                    if (discount != null && appleOfferSignature != null)
+                    {
+                        try
+                        {
+                            var nonce = new NSUuid(appleOfferSignature.Nonce);
+                            var paymentDiscount = new SKPaymentDiscount(
+                                discount.Identifier,
+                                appleOfferSignature.KeyId,
+                                nonce,
+                                appleOfferSignature.Signature,
+                                NSNumber.FromInt64(appleOfferSignature.Timestamp)
+                            );
+
+                            var mutablePayment = SKMutablePayment.PaymentWithProduct(product);
+                            mutablePayment.PaymentDiscount = paymentDiscount;
+                            if (!string.IsNullOrWhiteSpace(applicationUserName))
+                                mutablePayment.ApplicationUsername = applicationUserName;
+                            payment = mutablePayment;
+                        }
+                        catch
+                        {
+                            // Fallback if discount creation fails
+                            payment = CreatePayment(product, applicationUserName);
+                        }
+                    }
+                    else
+                    {
+                        // No signature provided or discount not found, fall back to normal payment
+                        payment = CreatePayment(product, applicationUserName);
+                    }
                 }
                 else
                 {
-                    var payment = SKMutablePayment.PaymentWithProduct(product);
-                    payment.ApplicationUsername = applicationUserName;
-
-                    SKPaymentQueue.DefaultQueue.AddPayment(payment);
+                    payment = CreatePayment(product, applicationUserName);
                 }
+
+                SKPaymentQueue.DefaultQueue.AddPayment(payment);
 
                 return await tcsTransaction.Task;
             }
             finally
             {
                 paymentObserver.TransactionCompleted -= handler;
+            }
+        }
+
+        SKPayment CreatePayment(SKProduct product, string applicationUserName)
+        {
+            if (string.IsNullOrWhiteSpace(applicationUserName))
+            {
+                return SKPayment.CreateFrom(product);
+            }
+            else
+            {
+                var payment = SKMutablePayment.PaymentWithProduct(product);
+                payment.ApplicationUsername = applicationUserName;
+                return payment;
             }
         }
 

@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net9.0-android;net9.0-ios;</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0;net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('windows'))">net10.0;net10.0-android;net10.0-ios</TargetFrameworks>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)\obj_verify\**</DefaultItemExcludes>
     <!--<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0;net9.0-windows10.0.19041.0</TargetFrameworks>-->
     <LangVersion>latest</LangVersion>
     <SingleProject>true</SingleProject>
@@ -43,7 +45,7 @@
 
   <!-- platform version number information -->
   <PropertyGroup>
-    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">18.2</SupportedOSPlatformVersion>
     <!--<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>-->
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
     <!--<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
@@ -68,7 +70,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -93,15 +95,15 @@
   <!-- Android -->
 
   <ItemGroup Condition=" $(TargetFramework.Contains('-android')) ">
-    <PackageReference Include="Xamarin.Android.Google.BillingClient" Version="7.1.1.3" />
+    <PackageReference Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.2" />
     <PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData.Core">
-      <Version>2.8.7.3</Version>
+      <Version>2.10.0.2</Version>
     </PackageReference>
   </ItemGroup>
 
 
-  <ItemGroup Condition=" $(TargetFramework.Contains('net9.0-android')) ">
-    <PackageReference Include="Microsoft.Maui.Essentials" Version="9.0.110" />
+  <ItemGroup Condition=" $(TargetFramework.Contains('-android')) ">
+    <PackageReference Include="Microsoft.Maui.Essentials" Version="10.0.60" />
   </ItemGroup>
 
 

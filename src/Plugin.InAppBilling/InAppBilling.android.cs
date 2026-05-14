@@ -180,6 +180,13 @@ namespace Plugin.InAppBilling
             var skuDetailsParams = QueryProductDetailsParams.NewBuilder().SetProductList(productList);
 
             var skuDetailsResult = await BillingClient.QueryProductDetailsAsync(skuDetailsParams.Build());
+            foreach (var pd in skuDetailsResult.ProductDetails)
+            {
+                var offers = pd.GetSubscriptionOfferDetails();
+                Android.Util.Log.Info("IAB", $"Product {pd.ProductId} offers: " +
+                    string.Join(",", offers?.Select(o => o.OfferId) ?? Array.Empty<string>()));
+            }
+
             ParseBillingResult(skuDetailsResult?.Result, IgnoreInvalidProducts);
 
             return skuDetailsResult.ProductDetails.Select(product => product.ToIAPProduct());
@@ -223,12 +230,12 @@ namespace Plugin.InAppBilling
                 _ => ProductType.Subs
             };
 
-            var historyParams = QueryPurchaseHistoryParams.NewBuilder().SetProductType(skuType).Build();
-            //TODO: Binding needs updated
-            var purchasesResult = await BillingClient.QueryPurchaseHistoryAsync(historyParams);
+            var query = QueryPurchasesParams.NewBuilder().SetProductType(skuType).Build();
+            var purchasesResult = await BillingClient.QueryPurchasesAsync(query);
 
+            ParseBillingResult(purchasesResult.Result);
 
-            return purchasesResult?.PurchaseHistoryRecords?.Select(p => p.ToIABPurchase()) ?? new List<InAppBillingPurchase>();
+            return purchasesResult.Purchases?.Select(p => p.ToIABPurchase()) ?? new List<InAppBillingPurchase>();
         }
 
         /// <summary>
@@ -331,7 +338,7 @@ namespace Plugin.InAppBilling
         /// <param name="obfuscatedAccountId">Specifies an optional obfuscated string that is uniquely associated with the user's account in your app.</param>
         /// <param name="obfuscatedProfileId">Specifies an optional obfuscated string that is uniquely associated with the user's profile in your app.</param>
         /// <returns></returns>
-        public async override Task<InAppBillingPurchase> PurchaseAsync(string productId, ItemType itemType, string obfuscatedAccountId = null, string obfuscatedProfileId = null, string subOfferToken = null, CancellationToken cancellationToken = default)
+        public async override Task<InAppBillingPurchase> PurchaseAsync(string productId, ItemType itemType, string obfuscatedAccountId = null, string obfuscatedProfileId = null, string subOfferToken = null, AppleOfferSignature appleOfferSignature = null, CancellationToken cancellationToken = default)
         {
             if (BillingClient == null || !IsConnected)
             {
