@@ -288,7 +288,7 @@ namespace Plugin.InAppBilling
                 .SetSubscriptionReplacementMode((int)prorationMode)
                 .Build();
 
-            var t = skuDetails.GetSubscriptionOfferDetails()?.FirstOrDefault()?.OfferToken;
+            var t = skuDetails.GetSubscriptionOfferDetails()?.FirstOrDefault(x => string.IsNullOrEmpty(x.OfferId))?.OfferToken;
 
 
             var prodDetails = BillingFlowParams.ProductDetailsParams.NewBuilder()
@@ -392,7 +392,7 @@ namespace Plugin.InAppBilling
 
             if (itemType == ProductType.Subs)
             {
-                var t = subOfferToken ?? skuDetails.GetSubscriptionOfferDetails()?.FirstOrDefault()?.OfferToken ?? string.Empty;
+                var t = subOfferToken == null ? skuDetails.GetSubscriptionOfferDetails()?.FirstOrDefault(x => string.IsNullOrEmpty(x.OfferId))?.OfferToken : skuDetails.GetSubscriptionOfferDetails()?.FirstOrDefault(x => subOfferToken == x.OfferId)?.OfferToken;
 
                 var productDetails = BillingFlowParams.ProductDetailsParams.NewBuilder()
               .SetProductDetails(skuDetails);
