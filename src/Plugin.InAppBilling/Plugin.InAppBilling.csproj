@@ -69,7 +69,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -94,15 +94,15 @@
   <!-- Android -->
 
   <ItemGroup Condition=" $(TargetFramework.Contains('-android')) ">
-    <PackageReference Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.2" />
+    <PackageReference Include="Xamarin.Android.Google.BillingClient" Version="9.1.0.2" />
     <PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData.Core">
-      <Version>2.10.0.2</Version>
+      <Version>2.11.0.1</Version>
     </PackageReference>
   </ItemGroup>
 
 
   <ItemGroup Condition=" $(TargetFramework.Contains('-android')) ">
-    <PackageReference Include="Microsoft.Maui.Essentials" Version="10.0.60" />
+    <PackageReference Include="Microsoft.Maui.Essentials" Version="10.0.120" />
   </ItemGroup>
 
 
